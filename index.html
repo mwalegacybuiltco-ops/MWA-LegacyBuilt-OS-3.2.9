@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LegacyBuilt Command OS™ — v3.2.9</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="topbar">
+  <h1 id="brandHeader">LegacyBuilt Command OS™ <span class="muted">v3.2.9</span></h1>
+  <p class="tag">Run your business anywhere — works 100% offline.</p>
+</header>
+
+<nav class="tabs" id="tabs" role="tablist">
+  <button data-tab="dashboard" class="active" role="tab" aria-selected="true">Dashboard</button>
+  <button data-tab="planner" role="tab" aria-selected="false">Planner</button>
+  <button data-tab="leads" role="tab" aria-selected="false">Leads</button>
+  <button data-tab="calendar" role="tab" aria-selected="false">Calendar</button>
+  <button data-tab="content" role="tab" aria-selected="false">Content Vault</button>
+  <button data-tab="mindset" role="tab" aria-selected="false">Mindset Vault</button>
+  <button data-tab="system" role="tab" aria-selected="false">System Tracker</button>
+  <button data-tab="brand" role="tab" aria-selected="false">Brand Library</button>
+  <button data-tab="settings" role="tab" aria-selected="false">Settings</button>
+</nav>
+
+<main>
+  <!-- DASHBOARD -->
+  <section id="dashboard" class="tab visible" role="tabpanel">
+    <div class="grid two">
+      <div class="card">
+        <h2>Today’s Focus</h2>
+        <input id="focusInput" placeholder="Pick one high-leverage move and finish it first.">
+        <button id="saveFocus" class="primary">Save</button>
+        <span id="focusSaved" class="saved"></span>
+      </div>
+      <div class="card">
+        <h2>At-a-Glance</h2>
+        <ul id="atAGlance"></ul>
+      </div>
+    </div>
+
+    <div class="grid two">
+      <div class="card">
+        <h2>Quick Income</h2>
+        <div class="row">
+          <input id="qiAmount" type="number" step="0.01" placeholder="Amount">
+          <input id="qiSource" placeholder="Source (e.g., Affiliate, UGC)">
+          <button id="qiAdd" class="secondary">Add</button>
+        </div>
+        <table id="qiTable" class="table"></table>
+      </div>
+      <div class="card">
+        <h2>Tasks</h2>
+        <div class="row">
+          <input id="taskInput" placeholder="Add a task and press Enter">
+          <button id="clearDone" class="secondary">Clear Completed</button>
+        </div>
+        <ul id="taskList" class="tasks"></ul>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Motivation Wins</h2>
+      <div class="row">
+        <input id="winInput" placeholder="Small win (e.g., booked a call, finished DM round)">
+        <button id="addWin" class="secondary">Add Win</button>
+      </div>
+      <ul id="winsList" class="wins"></ul>
+    </div>
+  </section>
+
+  <!-- PLANNER -->
+  <section id="planner" class="tab" role="tabpanel">
+    <div class="card">
+      <h2>Weekly Planner</h2>
+      <div id="plannerGrid" class="planner-grid"></div>
+      <div class="row" style="margin-top:8px">
+        <button id="savePlannerAll" class="secondary">Save All</button>
+        <span id="plannerSaved" class="saved"></span>
+      </div>
+      <p class="hint">Autosaves while you type. “Save All” forces a write (helps Safari).</p>
+    </div>
+  </section>
+
+  <!-- LEADS -->
+  <section id="leads" class="tab" role="tabpanel">
+    <div class="card">
+      <h2>Leads Tracker</h2>
+
+      <div class="lead-form">
+        <input id="leadName" placeholder="Name or handle">
+        <input id="leadContact" placeholder="IG @, email, phone">
+        <input id="leadSource" placeholder="Source (IG DM, TikTok, Referral)">
+        <input id="leadValue" type="number" step="1" placeholder="Value (USD)">
+        <input id="leadAction" placeholder="Next Action (what)">
+        <input id="leadDate" type="date">
+        <select id="leadStatus">
+          <option>Potential</option>
+          <option>Active</option>
+          <option>Won</option>
+          <option>Lost</option>
+        </select>
+        <textarea id="leadNotes" placeholder="Pain points, offer fit, next step"></textarea>
+      </div>
+      <div class="row">
+        <button id="addLead" class="primary">Add Lead</button>
+        <button id="exportLeads" class="secondary">Export CSV</button>
+      </div>
+
+      <div id="leadAlert" class="alert"></div>
+      <table id="leadsTable" class="table"></table>
+      <p class="hint">All leads with a date are synced to the Calendar on add and on app load.</p>
+    </div>
+  </section>
+
+  <!-- CALENDAR -->
+  <section id="calendar" class="tab" role="tabpanel">
+    <div class="card">
+      <h2>Calendar</h2>
+      <div class="row">
+        <button id="prevMonth" class="secondary">◀</button>
+        <h3 id="calLabel" class="cal-label"></h3>
+        <button id="nextMonth" class="secondary">▶</button>
+        <button id="refreshCalendar" class="primary ghost">Refresh</button>
+      </div>
+      <div id="calendarGrid" class="calendar-grid" aria-live="polite"></div>
+      <p class="hint">Safari tip: the Refresh button forces a re-render if your cache is sticky.</p>
+    </div>
+  </section>
+
+  <!-- CONTENT VAULT -->
+  <section id="content" class="tab" role="tabpanel">
+    <div class="grid two">
+      <div class="card">
+        <h2>Post Generator</h2>
+        <textarea id="postPrompt" placeholder="Describe the vibe, offer, and audience…"></textarea>
+        <div class="row">
+          <button id="genPost" class="primary">Generate</button>
+          <button id="savePost" class="secondary">Save</button>
+        </div>
+        <div id="postOutput" class="output"></div>
+        <h3>Saved Posts</h3>
+        <ul id="postsSaved" class="list"></ul>
+      </div>
+      <div class="card">
+        <h2>Caption Generator</h2>
+        <textarea id="captionPrompt" placeholder="Short caption vibe (e.g., FOMO, proof, reset)…"></textarea>
+        <div class="row">
+          <button id="genCaption" class="primary">Generate</button>
+          <button id="saveCaption" class="secondary">Save</button>
+        </div>
+        <div id="captionOutput" class="output"></div>
+        <h3>Saved Captions</h3>
+        <ul id="captionsSaved" class="list"></ul>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Hashtag Generator</h2>
+      <div class="row">
+        <input id="hashtagTopic" placeholder="Topic (e.g., digital freedom, UGC)">
+        <button id="genTags" class="secondary">Generate</button>
+      </div>
+      <div id="tagsOutput" class="output"></div>
+    </div>
+  </section>
+
+  <!-- MINDSET VAULT -->
+  <section id="mindset" class="tab" role="tabpanel">
+    <div class="grid two">
+      <div class="card">
+        <h2>Anchors & Affirmations</h2>
+        <textarea id="mindsetText" placeholder="Add affirmations / anchors…"></textarea>
+        <button id="saveMindset" class="secondary">Save Affirmation</button>
+        <div id="mindsetList" class="pill-list"></div>
+      </div>
+      <div class="card">
+        <h2>Journal</h2>
+        <div class="row">
+          <input id="journalTitle" placeholder="Title">
+          <input id="journalDate" type="date">
+        </div>
+        <textarea id="journalBody" placeholder="Write your entry…"></textarea>
+        <div class="row">
+          <button id="saveJournal" class="primary">Save Entry</button>
+        </div>
+        <ul id="journalList" class="list"></ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- SYSTEM TRACKER -->
+  <section id="system" class="tab" role="tabpanel">
+    <div class="card">
+      <h2>System Tracker</h2>
+      <table id="systemTable" class="table"></table>
+      <div class="row">
+        <input id="sysName" placeholder="System (e.g., DM Routine)">
+        <input id="sysMetric" placeholder="Metric (e.g., DMs sent)">
+        <button id="addSystem" class="secondary">Add</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- BRAND LIBRARY -->
+  <section id="brand" class="tab" role="tabpanel">
+    <div class="card">
+      <h2>Brand Library (Fill in the Blanks)</h2>
+      <div class="grid two">
+        <div>
+          <label>Brand Name</label>
+          <input id="brandName" placeholder="e.g., MWA LegacyBuiltCO">
+          <label>Tagline / Slogan</label>
+          <input id="brandTagline" placeholder="e.g., Built. Never Given.">
+          <label>Voice (comma separated)</label>
+          <input id="brandVoice" placeholder="e.g., bold, sassy, proof-based">
+        </div>
+        <div>
+          <label>Primary Color (hex)</label>
+          <input id="brandColorPrimary" placeholder="#5B2E90" value="#5B2E90">
+          <label>Accent Color (hex)</label>
+          <input id="brandColorAccent" placeholder="#D4AF37" value="#D4AF37">
+          <label>Font Stack (optional)</label>
+          <input id="brandFont" placeholder="e.g., Inter, Segoe UI, system-ui">
+        </div>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <button id="saveBrand" class="secondary">Save Brand</button>
+        <span id="brandSaved" class="saved"></span>
+      </div>
+      <div class="brand-preview" id="brandPreview"></div>
+    </div>
+  </section>
+
+  <!-- SETTINGS -->
+  <section id="settings" class="tab" role="tabpanel">
+    <div class="card">
+      <h2>Backup & Reset</h2>
+      <div class="row">
+        <button id="exportAll" class="secondary">Export .json</button>
+        <input id="importFile" type="file" accept=".json">
+        <button id="resetAll" class="ghost">Factory Reset</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <small>© 2025 MWA LegacyBuiltCO · Offline-first · Safari-compatible</small>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>
