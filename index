@@ -1,0 +1,305 @@
+// LegacyBuilt Command OS v3.2.9
+(function(){
+  const $ = sel => document.querySelector(sel);
+  const $$ = sel => Array.from(document.querySelectorAll(sel));
+  const store = {
+    get(k, def){ try{ return JSON.parse(localStorage.getItem(k)) ?? def }catch(e){ return def } },
+    set(k, v){ localStorage.setItem(k, JSON.stringify(v)) }
+  };
+
+  // ---------- Tab Router (Hotfix) ----------
+  function showTab(name){
+    // buttons
+    $$('#tabs button').forEach(b=>{
+      const on = b.dataset.tab===name;
+      b.classList.toggle('active', on);
+      b.setAttribute('aria-selected', on ? 'true' : 'false');
+    });
+    // sections
+    $$('.tab').forEach(s=> s.classList.toggle('visible', s.id===name));
+    // lazy renders
+    if(name==='calendar') renderCalendar();
+    if(name==='planner') renderPlanner();
+  }
+  function setupTabs(){
+    // click support
+    $$('#tabs button').forEach(b=> b.addEventListener('click', ()=>{
+      const name = b.dataset.tab;
+      location.hash = '#'+name; // keep in URL
+      showTab(name);
+    }));
+    // hash support (deep links)
+    window.addEventListener('hashchange', ()=>{
+      const name = location.hash.replace('#','') || 'dashboard';
+      showTab(name);
+    });
+    // initial
+    const initial = location.hash.replace('#','') || 'dashboard';
+    showTab(initial);
+  }
+
+  // ---------- Utilities ----------
+  function fmtDateKey(d){ const y=d.getFullYear(), m=('0'+(d.getMonth()+1)).slice(-2), dy=('0'+d.getDate()).slice(-2); return `${y}-${m}-${dy}`; }
+  function startOfWeek(d){ const x=new Date(d); const day=(x.getDay()+6)%7; x.setDate(x.getDate()-day); x.setHours(0,0,0,0); return x; }
+  function normalizeHex(v){ v=(v||'').trim(); if(/^#?[0-9A-Fa-f]{6}$/.test(v)){ return v[0]=='#'?v:'#'+v; } return '#5B2E90'; }
+  function escapeHTML(s){ return (s||'').replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;', "'":'&#39;' }[m])); }
+  function download(url, name){ const a=document.createElement('a'); a.href=url; a.download=name; document.body.appendChild(a); a.click(); setTimeout(()=>URL.revokeObjectURL(url),500); a.remove(); }
+
+  // ---------- Brand ----------
+  function applyBrand(){
+    const brand = store.get('brandProfile', {name:'LegacyBuilt Command OS™', tagline:'Built. Never Given.', voice:'bold,sassy,proof-based', primary:'#5B2E90', accent:'#D4AF37', font:''});
+    document.documentElement.style.setProperty('--primary', brand.primary || '#5B2E90');
+    document.documentElement.style.setProperty('--accent', brand.accent || '#D4AF37');
+    if(brand.font){ document.body.style.fontFamily = brand.font; }
+    const h = $('#brandHeader'); if(h) h.innerHTML = `${escapeHTML(brand.name)} <span class="muted">v3.2.9</span>`;
+    if($('#brandName')){
+      $('#brandName').value = brand.name || '';
+      $('#brandTagline').value = brand.tagline || '';
+      $('#brandVoice').value = brand.voice || '';
+      $('#brandColorPrimary').value = brand.primary || '#5B2E90';
+      $('#brandColorAccent').value = brand.accent || '#D4AF37';
+      $('#brandFont').value = brand.font || '';
+      const preview = $('#brandPreview');
+      if(preview){ preview.innerHTML = `<strong>Preview:</strong><div style="margin-top:6px">Name: ${escapeHTML(brand.name)}<br>Tagline: ${escapeHTML(brand.tagline)}<br>Voice: ${escapeHTML(brand.voice)}</div>`; preview.style.borderColor = brand.primary; }
+    }
+  }
+  $('#saveBrand')?.addEventListener('click', ()=>{
+    const profile = {
+      name: $('#brandName').value.trim() || 'LegacyBuilt Command OS™',
+      tagline: $('#brandTagline').value.trim() || 'Built. Never Given.',
+      voice: $('#brandVoice').value.trim() || 'bold,sassy,proof-based',
+      primary: normalizeHex($('#brandColorPrimary').value || '#5B2E90'),
+      accent: normalizeHex($('#brandColorAccent').value || '#D4AF37'),
+      font: $('#brandFont').value.trim()
+    };
+    store.set('brandProfile', profile); applyBrand();
+    $('#brandSaved').textContent = 'Saved ✓'; setTimeout(()=>$('#brandSaved').textContent='', 1500);
+  });
+
+  // ---------- Focus & Wins ----------
+  $('#saveFocus')?.addEventListener('click', ()=>{
+    store.set('focusToday', $('#focusInput').value.trim());
+    $('#focusSaved').textContent='Saved ✓'; setTimeout(()=>$('#focusSaved').textContent='',1500);
+    refreshGlance();
+  });
+  $('#addWin')?.addEventListener('click', ()=>{
+    const t=$('#winInput').value.trim(); if(!t) return;
+    const wins = store.get('wins',[]); wins.push({t, ts: Date.now()}); store.set('wins', wins);
+    $('#winInput').value=''; renderWins(); refreshGlance();
+  });
+
+  function renderWins(){ const ul=$('#winsList'); if(!ul) return; ul.innerHTML=''; store.get('wins',[]).slice().reverse().forEach(w=>{ const li=document.createElement('li'); li.textContent = `${new Date(w.ts).toLocaleDateString()} — ${w.t}`; ul.appendChild(li); }); }
+  function renderGlance(){
+    const list=$('#atAGlance'); if(!list) return; list.innerHTML='';
+    const items=[];
+    if(store.get('focusToday','')) items.push('Focus: '+store.get('focusToday',''));
+    items.push('Leads: '+store.get('leads',[]).length);
+    items.push('Wins logged: '+store.get('wins',[]).length);
+    items.forEach(t=>{ const li=document.createElement('li'); li.textContent=t; list.appendChild(li); });
+  }
+  function refreshGlance(){ renderGlance(); }
+
+  // ---------- Quick Income ----------
+  $('#qiAdd')?.addEventListener('click', ()=>{
+    const amount=parseFloat($('#qiAmount').value||'0'); if(!amount) return;
+    const source=$('#qiSource').value||'Other'; const rows=store.get('quickIncome',[]);
+    rows.push({amount, source, ts:Date.now()}); store.set('quickIncome', rows);
+    $('#qiAmount').value=''; $('#qiSource').value=''; renderQI();
+  });
+  function renderQI(){
+    const rows=store.get('quickIncome',[]); const table=$('#qiTable'); if(!table) return;
+    table.innerHTML = '<tr><th>Date</th><th>Source</th><th>Amount</th></tr>' +
+      rows.slice().reverse().map(r=>`<tr><td>${new Date(r.ts).toLocaleDateString()}</td><td>${escapeHTML(r.source)}</td><td>$${r.amount.toFixed(2)}</td></tr>`).join('');
+  }
+
+  // ---------- Tasks ----------
+  $('#taskInput')?.addEventListener('keydown', (e)=>{
+    if(e.key==='Enter'){ const t=e.target.value.trim(); if(!t) return;
+      const tasks=store.get('tasks',[]); tasks.push({t,done:false,id:Date.now()}); store.set('tasks',tasks); e.target.value=''; renderTasks();
+    }
+  });
+  $('#clearDone')?.addEventListener('click', ()=>{ store.set('tasks', store.get('tasks',[]).filter(t=>!t.done)); renderTasks(); });
+  function renderTasks(){
+    const list=$('#taskList'); if(!list) return; list.innerHTML='';
+    store.get('tasks',[]).forEach(t=>{
+      const li=document.createElement('li');
+      const cb=document.createElement('input'); cb.type='checkbox'; cb.checked=t.done;
+      cb.addEventListener('change', ()=>{ const arr=store.get('tasks',[]); const it=arr.find(x=>x.id===t.id); if(it){ it.done=cb.checked; store.set('tasks',arr); renderTasks(); } });
+      const span=document.createElement('span'); span.textContent=t.t; if(t.done) li.classList.add('done');
+      li.append(cb,span); list.appendChild(li);
+    });
+  }
+
+  // ---------- Planner ----------
+  function getPlannerDays(){ return store.get('plannerDays', {}); }
+  function setPlannerDay(key, text){ const obj=getPlannerDays(); obj[key]=text; store.set('plannerDays', obj); }
+  function renderPlanner(){
+    const grid=$('#plannerGrid'); if(!grid) return; grid.innerHTML='';
+    const start=startOfWeek(new Date()); const saved=getPlannerDays();
+    for(let i=0;i<7;i++){
+      const d=new Date(start); d.setDate(start.getDate()+i); const key=fmtDateKey(d);
+      const cell=document.createElement('div'); cell.className='planner-cell';
+      const ta=document.createElement('textarea'); ta.placeholder=d.toDateString(); ta.value=saved[key]||''; ta.dataset.key=key;
+      ta.addEventListener('input', ()=>setPlannerDay(key, ta.value));
+      ta.addEventListener('blur', ()=>setPlannerDay(key, ta.value));
+      cell.appendChild(ta); grid.appendChild(cell);
+    }
+  }
+  $('#savePlannerAll')?.addEventListener('click', ()=>{
+    $$('#plannerGrid textarea').forEach(ta=> setPlannerDay(ta.dataset.key, ta.value));
+    $('#plannerSaved').textContent='Saved ✓'; setTimeout(()=>$('#plannerSaved').textContent='',1500);
+  });
+
+  // ---------- Leads & Calendar ----------
+  function normalizeDate(str){
+    if(!str) return fmtDateKey(new Date());
+    if(/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
+    const d=new Date(str); if(!isNaN(d)) return fmtDateKey(d); return fmtDateKey(new Date());
+  }
+  function upsertCalendarForLead(lead){
+    const events = store.get('events', []);
+    const keep = events.filter(e=>e.id!=='lead-'+lead.id);
+    keep.push({id:'lead-'+lead.id, date:lead.date, title:`Lead: ${lead.name||'Follow-up'} — ${lead.nextAction||'Follow up'}`});
+    store.set('events', keep);
+  }
+  function deleteCalendarForLeadId(id){
+    store.set('events', store.get('events', []).filter(e=>e.id!=='lead-'+id));
+  }
+
+  $('#addLead')?.addEventListener('click', ()=>{
+    const lead = {
+      id: String(Date.now()),
+      name: $('#leadName').value.trim(),
+      contact: $('#leadContact').value.trim(),
+      source: $('#leadSource').value.trim(),
+      value: parseFloat($('#leadValue').value||'0'),
+      nextAction: $('#leadAction').value.trim(),
+      date: normalizeDate($('#leadDate').value),
+      status: $('#leadStatus').value,
+      notes: $('#leadNotes').value.trim(),
+      ts: Date.now()
+    };
+    const arr = store.get('leads', []); arr.push(lead); store.set('leads', arr);
+    upsertCalendarForLead(lead);
+    const alertEl=$('#leadAlert'); if(alertEl){ alertEl.textContent = `Event added to ${lead.date}.`; setTimeout(()=>alertEl.textContent='',2000); }
+    ['leadName','leadContact','leadSource','leadValue','leadAction','leadDate','leadNotes'].forEach(id=>$('#'+id).value=''); $('#leadStatus').value='Potential';
+    renderLeads(); renderCalendar(); refreshGlance();
+  });
+
+  function renderLeads(){
+    const rows=store.get('leads',[]);
+    const el=$('#leadsTable'); if(!el) return;
+    el.innerHTML='<tr><th>Name</th><th>Contact</th><th>Source</th><th>Value</th><th>Next Action</th><th>Date</th><th>Status</th><th></th></tr>'+
+      rows.slice().reverse().map(l=>`<tr>
+        <td>${escapeHTML(l.name)}</td><td>${escapeHTML(l.contact)}</td><td>${escapeHTML(l.source)}</td>
+        <td>${l.value?('$'+l.value.toFixed(0)):'-'}</td><td>${escapeHTML(l.nextAction||'')}</td><td>${escapeHTML(l.date||'')}</td>
+        <td>${escapeHTML(l.status)}</td><td><button data-id="${l.id}" class="mini danger">Delete</button></td>
+      </tr>`).join('');
+    el.querySelectorAll('button[data-id]').forEach(btn=>btn.addEventListener('click',()=>{
+      const id=btn.getAttribute('data-id');
+      store.set('leads', store.get('leads',[]).filter(x=>x.id!==id));
+      deleteCalendarForLeadId(id); renderLeads(); renderCalendar(); refreshGlance();
+    }));
+  }
+  function migrateLeadsToCalendar(){
+    const leads=store.get('leads',[]);
+    leads.forEach(l=>{ l.date = normalizeDate(l.date); upsertCalendarForLead(l); });
+    store.set('leads', leads);
+  }
+
+  // ---------- Calendar ----------
+  let calMonthOffset=0;
+  $('#prevMonth')?.addEventListener('click', ()=>{ calMonthOffset--; renderCalendar(); });
+  $('#nextMonth')?.addEventListener('click', ()=>{ calMonthOffset++; renderCalendar(); });
+  $('#refreshCalendar')?.addEventListener('click', ()=>renderCalendar(true));
+  function renderCalendar(force){
+    const grid=$('#calendarGrid'); if(!grid) return; grid.innerHTML='';
+    const base=new Date(); base.setDate(1); base.setMonth(base.getMonth()+calMonthOffset);
+    const month=base.getMonth(), year=base.getFullYear();
+    const label=$('#calLabel'); if(label) label.textContent = base.toLocaleString(undefined,{month:'long',year:'numeric'});
+    const first=(new Date(year,month,1)).getDay(); const days=new Date(year, month+1, 0).getDate();
+    const events=store.get('events',[]);
+    for(let i=0;i<first;i++){ const spacer=document.createElement('div'); spacer.className='cal-cell'; grid.appendChild(spacer); }
+    for(let d=1; d<=days; d++){
+      const dateStr=fmtDateKey(new Date(year,month,d));
+      const cell=document.createElement('div'); cell.className='cal-cell';
+      const lab=document.createElement('div'); lab.className='date'; lab.textContent=d; cell.appendChild(lab);
+      events.filter(e=>e.date===dateStr).forEach(e=>{ const div=document.createElement('div'); div.className='event'; div.textContent=e.title; cell.appendChild(div); });
+      grid.appendChild(cell);
+    }
+  }
+
+  // ---------- Content Vault ----------
+  let lastPostDraft='', lastCaptionDraft='';
+  $('#genPost')?.addEventListener('click', ()=>{ const p=($('#postPrompt').value||'').trim(); const t=genPost(p); lastPostDraft=t; $('#postOutput').textContent=t; });
+  $('#savePost')?.addEventListener('click', ()=>{ if(!lastPostDraft) return; const arr=store.get('posts',[]); arr.push({t:lastPostDraft, ts:Date.now()}); store.set('posts',arr); renderPosts(); });
+  function renderPosts(){ const ul=$('#postsSaved'); if(!ul) return; ul.innerHTML=''; store.get('posts',[]).slice().reverse().forEach(p=>{ const li=document.createElement('li'); li.textContent=`${new Date(p.ts).toLocaleDateString()} — ${p.t}`; ul.appendChild(li); }); }
+
+  $('#genCaption')?.addEventListener('click', ()=>{ const p=($('#captionPrompt').value||'').trim(); const t=genCaption(p); lastCaptionDraft=t; $('#captionOutput').textContent=t; });
+  $('#saveCaption')?.addEventListener('click', ()=>{ if(!lastCaptionDraft) return; const arr=store.get('captions',[]); arr.push({t:lastCaptionDraft, ts:Date.now()}); store.set('captions',arr); renderCaptions(); });
+  function renderCaptions(){ const ul=$('#captionsSaved'); if(!ul) return; ul.innerHTML=''; store.get('captions',[]).slice().reverse().forEach(p=>{ const li=document.createElement('li'); li.textContent=`${new Date(p.ts).toLocaleDateString()} — ${p.t}`; ul.appendChild(li); }); }
+
+  $('#genTags')?.addEventListener('click', ()=>{ const topic=($('#hashtagTopic').value||'').trim(); const out=$('#tagsOutput'); if(out) out.textContent = genTags(topic).join(' '); });
+
+  function genPost(prompt){
+    const lines=["If you’re waiting for perfect, you’ll miss profitable.","Built in the breakdown. Proof, not fluff.","From fifth-wheel Wi-Fi to digital freedom — let’s go.","Identity before income. Action before approval."];
+    const line=lines[Math.floor(Math.random()*lines.length)];
+    return `${prompt?prompt+"\\n\\n":""}${line}\\n\\nDM me “RESET” if you want the playbook.`;
+  }
+  function genCaption(prompt){
+    const caps=["The wave is coming. Don’t blink.","Proof over hype. Let’s build.","From $130 to systems that sell.","Tiny steps. Ridiculous outcomes."];
+    const pick=caps[Math.floor(Math.random()*caps.length)];
+    return prompt ? `${prompt} — ${pick}` : pick;
+  }
+  function genTags(topic){
+    const base=['#MWALegacyBuilt','#DigitalFreedom','#UGC','#WiFiIncome','#BuiltNeverGiven','#LWA'];
+    if(!topic) return base;
+    const t=topic.split(/\\s+/).slice(0,3).map(x=>x.replace(/[^a-z0-9]/gi,'')).filter(Boolean);
+    return base.concat(t.map(x=>'#'+x));
+  }
+
+  // ---------- Mindset ----------
+  $('#saveMindset')?.addEventListener('click', ()=>{
+    const v=$('#mindsetText').value.trim(); if(!v) return;
+    const arr=store.get('mindset',[]); arr.push({t:v,id:String(Date.now())}); store.set('mindset',arr); $('#mindsetText').value=''; renderMindset();
+  });
+  function renderMindset(){ const wrap=$('#mindsetList'); if(!wrap) return; wrap.innerHTML=''; store.get('mindset',[]).forEach(m=>{ const pill=document.createElement('span'); pill.className='pill'; pill.textContent=m.t; wrap.appendChild(pill); }); }
+
+  $('#saveJournal')?.addEventListener('click', ()=>{
+    const title=$('#journalTitle').value.trim()||'Untitled'; const date=$('#journalDate').value||fmtDateKey(new Date()); const body=$('#journalBody').value.trim(); if(!body) return;
+    const arr=store.get('journal',[]); arr.push({id:String(Date.now()), title, date, body, ts:Date.now()}); store.set('journal',arr);
+    $('#journalTitle').value=''; $('#journalDate').value=''; $('#journalBody').value=''; renderJournal();
+  });
+  function renderJournal(){ const ul=$('#journalList'); if(!ul) return; ul.innerHTML=''; store.get('journal',[]).slice().reverse().forEach(j=>{ const li=document.createElement('li'); li.innerHTML=`<strong>${escapeHTML(j.title)}</strong> — <em>${j.date}</em><br>${escapeHTML(j.body)}`; ul.appendChild(li); }); }
+
+  // ---------- Systems ----------
+  $('#addSystem')?.addEventListener('click', ()=>{
+    const name=$('#sysName').value.trim(), metric=$('#sysMetric').value.trim(); if(!name||!metric) return;
+    const arr=store.get('systems',[]); arr.push({name,metric,id:String(Date.now()),count:0}); store.set('systems',arr); $('#sysName').value=''; $('#sysMetric').value=''; renderSystems();
+  });
+  function renderSystems(){ const el=$('#systemTable'); if(!el) return; const rows=store.get('systems',[]); el.innerHTML='<tr><th>System</th><th>Metric</th><th>Count</th><th>+1</th></tr>'+rows.map(s=>`<tr><td>${escapeHTML(s.name)}</td><td>${escapeHTML(s.metric)}</td><td>${s.count}</td><td><button data-id="${s.id}" class="mini">+1</button></td></tr>`).join(''); el.querySelectorAll('button[data-id]').forEach(b=>b.addEventListener('click',()=>{ const id=b.getAttribute('data-id'); const arr=store.get('systems',[]); const it=arr.find(x=>x.id===id); if(it){ it.count++; store.set('systems',arr); renderSystems(); } })); }
+
+  // ---------- Export/Import/Reset ----------
+  $('#exportAll')?.addEventListener('click', ()=>{
+    const dump={};
+    ['focusToday','quickIncome','tasks','wins','leads','events','mindset','journal','systems','posts','captions','brandProfile','plannerDays'].forEach(k=>dump[k]=store.get(k,null));
+    const blob=new Blob([JSON.stringify(dump,null,2)],{type:'application/json'}); const url=URL.createObjectURL(blob); download(url,'legacybuilt_backup.json');
+  });
+  $('#importFile')?.addEventListener('change',(e)=>{
+    const file=e.target.files[0]; if(!file) return; const reader=new FileReader();
+    reader.onload=()=>{ try{ const obj=JSON.parse(reader.result); Object.keys(obj).forEach(k=>store.set(k,obj[k])); applyBrand(); renderAll(); alert('Import complete.'); }catch(err){ alert('Invalid file.'); } };
+    reader.readAsText(file);
+  });
+  $('#resetAll')?.addEventListener('click', ()=>{ if(confirm('Factory reset? This clears local data.')){ localStorage.clear(); location.reload(); } });
+
+  // ---------- Initial render ----------
+  function renderAll(){
+    applyBrand();
+    renderQI(); renderTasks(); renderPlanner(); renderLeads(); migrateLeadsToCalendar(); renderCalendar(); renderMindset(); renderJournal(); renderSystems(); renderWins(); renderPosts(); renderCaptions(); renderGlance();
+  }
+
+  // Boot
+  setupTabs();   // <-- critical hotfix
+  renderAll();
+
+})();
