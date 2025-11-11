@@ -1,0 +1,17 @@
+# Objection Alchemy - Flip to Ownership
+
+- Time: "Exactly why this exists - to give your time back."
+- Money: "Staying the same is already costing more than 699 dollars."
+- Fear of failure: "Fear is proof you are near a breakthrough."
+- Overwhelm: "We will do step one only: setup -> one traffic lane -> first commission."
+- Spouse buy-in: "What would help them feel safe? I can outline the plan in 3 bullets."
+- Need to think: "What part are you hoping to feel more certain about?"
+- Too many options: "That is why I recommend the Elite Founders Bundle - it simplifies the next 30 days."
+- Past programs: "This is not another course; it is a guided system with mentorship."
+- Not techy: "Perfect - we keep clicks minimal and repeatable."
+- No audience: "We will build one traffic lane and recycle your best posts."
+- What if it does not work: "We track inputs daily - actions create results."
+- Bad timing: "Deciding creates the time. Waiting drains it."
+- Info overload: "You do not need more info, you need implementation. That is what this is."
+- I am shy on video: "We will start with low-face content and DMs - momentum first."
+- I am older or not trendy: "Your story is your edge - your trust factor is already higher."
