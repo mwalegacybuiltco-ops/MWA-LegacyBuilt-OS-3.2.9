@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>LegacyBuilt Command OS v3.2.9</title>
+  <meta name="theme-color" content="#111111">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="apple-touch-icon" href="assets/icon-192.png">
+</head>
+<body>
+  <!-- © 2025 MWA LegacyBuiltCO™ — LegacyBuilt Command OS™ v3.2.9 | Created by April Lungal. All Rights Reserved. -->
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="logo"></div><div class="title">LegacyBuilt Command OS</div>
+      </div>
+      <div class="nav" id="nav">
+        <button data-tab="dashboard">Dashboard</button>
+        <button data-tab="system">System Tracker</button>
+        <button data-tab="leads">Lead Tracker</button>
+        <button data-tab="calendar">Calendar</button>
+        <button data-tab="mindset">Mindset Vault</button>
+        <button data-tab="brand">Brand Library</button>
+        <button data-tab="content">Content Vault</button>
+        <button data-tab="planner">Planner</button>
+        <button data-tab="settings">Settings • User Guide</button>
+      </div>
+    </aside>
+
+    <header class="header">
+      <div><strong>LB Command OS v3.2.9</strong> — Desktop PWA</div>
+      <div class="small" id="status">Ready</div>
+    </header>
+
+    <main class="main">
+      <!-- DASHBOARD -->
+      <section id="tab-dashboard" class="tab">
+        <div class="grid two">
+          <div class="card">
+            <h3>Today’s Focus</h3>
+            <div class="row">
+              <input id="focus" placeholder="Top priority"/>
+              <button class="primary" onclick="saveFocus()">Save</button>
+            </div>
+            <div class="small" id="focusSaved"></div>
+          </div>
+          <div class="card">
+            <h3>Quick Actions</h3>
+            <div class="row">
+              <button class="ghost" onclick="nav('leads')">Add Lead</button>
+              <button class="ghost" onclick="nav('content')">Write Post</button>
+              <button class="ghost" onclick="nav('mindset')">Journal</button>
+            </div>
+          </div>
+        </div>
+        <div class="grid two">
+          <div class="card">
+            <h3>Quick Income Tasks</h3>
+            <div class="row">
+              <input id="qiInput" placeholder="Add a money-making action (DM 5 leads, post a story, follow-up 3)"/>
+              <input id="qiAmt" type="number" step="0.01" placeholder="Est. $ (optional)"/>
+              <button class="primary" onclick="qiAdd()">Add</button>
+            </div>
+            <div id="qiList"></div>
+            <div class="small" id="qiTotals"></div>
+          </div>
+          <div class="card">
+            <h3>Quick Tasks</h3>
+            <div class="row">
+              <input id="qtInput" placeholder="Fast task (under 10 min)"/>
+              <button class="primary" onclick="qtAdd()">Add</button>
+            </div>
+            <div id="qtList"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SYSTEM -->
+      <section id="tab-system" class="tab hide">
+        <div class="grid two">
+          <div class="card">
+            <h3>Activity Overview</h3>
+            <div>Leads tracked: <strong id="statLeads">0</strong></div>
+            <div class="progress"><div id="progLeads"></div></div><br/>
+            <div>Upcoming follow-ups: <strong id="statUpcoming">0</strong></div>
+            <div class="progress"><div id="progUpcoming"></div></div><br/>
+            <div>Posts generated: <strong id="statPosts">0</strong></div>
+            <div class="progress"><div id="progPosts"></div></div><br/>
+            <div>Journal entries: <strong id="statJournals">0</strong></div>
+            <div class="progress"><div id="progJournals"></div></div>
+          </div>
+          <div class="card">
+            <h3>Controls</h3>
+            <div class="row">
+              <button class="ghost" onclick="exportData()">Export Data</button>
+              <button class="ghost" onclick="if(confirm('Reset all data?')) resetAll()">Reset All</button>
+            </div>
+            <p class="small">Export downloads a JSON backup of your local data.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- LEADS -->
+      <section id="tab-leads" class="tab hide">
+        <div class="card">
+          <h3>Add Lead</h3>
+          <div class="grid two">
+            <input id="leadName" placeholder="Name"/>
+            <input id="leadPlatform" placeholder="Platform or Source"/>
+            <input id="leadContact" placeholder="Contact (email/handle)"/>
+            <input id="leadNotes" placeholder="Notes"/>
+            <input id="leadFollow" type="datetime-local"/>
+            <button class="primary" onclick="addLead()">Save Lead → Calendar</button>
+          </div>
+          <div class="small" id="leadSaved"></div>
+        </div>
+        <div class="card">
+          <h3>Leads</h3>
+          <div id="leadList"></div>
+        </div>
+      </section>
+
+      <!-- CALENDAR -->
+      <section id="tab-calendar" class="tab hide">
+        <div class="card">
+          <div class="cal-head">
+            <button class="ghost" onclick="calPrev()">&larr;</button>
+            <strong id="calTitle">Month YYYY</strong>
+            <button class="ghost" onclick="calNext()">&rarr;</button>
+            <span style="flex:1"></span>
+            <button class="ghost" onclick="renderUpcoming()">Upcoming</button>
+          </div>
+          <div class="cal-grid" id="calGrid"></div>
+        </div>
+        <div class="card">
+          <h3>Upcoming</h3>
+          <div id="upcomingList"></div>
+        </div>
+      </section>
+
+      <!-- MINDSET -->
+      <section id="tab-mindset" class="tab hide">
+        <div class="grid two">
+          <div class="card">
+            <h3>Affirmations</h3>
+            <textarea id="affirmations" placeholder="Write or paste your affirmations..."></textarea>
+            <div class="row">
+              <button class="primary" onclick="saveAffirmations()">Save</button>
+              <button class="ghost" onclick="copyText('affirmations')">Copy</button>
+            </div>
+          </div>
+          <div class="card">
+            <h3>Journal</h3>
+            <textarea id="journal" placeholder="Stream your thoughts..."></textarea>
+            <div class="row">
+              <button class="primary" onclick="saveJournal()">Save</button>
+              <button class="ghost" onclick="copyText('journal')">Copy</button>
+            </div>
+            <div class="small" id="journalCount"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- BRAND -->
+      <section id="tab-brand" class="tab hide">
+        <div class="grid two">
+          <div class="card">
+            <h3>Brand Basics</h3>
+            <input id="brandName" placeholder="Brand Name"/>
+            <input id="brandTag" placeholder="Tagline / Promise"/>
+            <input id="brandColors" placeholder="Colors (hex, comma-separated)"/>
+            <textarea id="brandTone" placeholder="Voice / Tone Prompts"></textarea>
+            <button class="primary" onclick="saveBrand()">Save Brand</button>
+          </div>
+          <div class="card">
+            <h3>Saved Brand</h3>
+            <pre id="brandPreview" class="small"></pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- CONTENT -->
+      <section id="tab-content" class="tab hide">
+        <div class="grid two">
+          <div class="card">
+            <h3>Post Generator</h3>
+            <div class="row">
+              <input id="pgTopic" placeholder="Topic (e.g., Wi-Fi freedom, Gen-X rebuilders)"/>
+              <select id="pgPlatform">
+                <option>Facebook</option><option>Instagram</option><option>TikTok</option><option>Threads</option>
+              </select>
+            </div>
+            <textarea id="pgNotes" placeholder="Key points, offer, CTA..."></textarea>
+            <button class="primary" onclick="generatePost()">Generate Post</button>
+            <textarea id="pgOutput" placeholder="Your generated post will appear here..."></textarea>
+            <div class="row">
+              <button class="ghost" onclick="copyText('pgOutput')">Copy to Clipboard</button>
+              <button class="ghost" onclick="saveGeneratedPost()">Save to Vault</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>Caption Generator + Hashtag Generator</h3>
+            <div class="row">
+              <input id="capTopic" placeholder="Caption topic (proof, story, CTA)"/>
+              <select id="capStyle">
+                <option value="curiosity">Curiosity</option>
+                <option value="educational">Educational</option>
+                <option value="disruptive">Disruptive</option>
+                <option value="ugc">UGC</option>
+              </select>
+            </div>
+            <textarea id="capNotes" placeholder="Add details (offer, transformation, numbers, DM keyword)"></textarea>
+            <button class="primary" onclick="generateCaption()">Generate Caption</button>
+            <textarea id="capOut" placeholder="Generated caption..."></textarea>
+
+            <h4>Hashtag Generator</h4>
+            <div class="row">
+              <input id="hashTopic" placeholder="Keywords (e.g., genx, digital business, wifi income)"/>
+              <input id="hashN" type="number" step="1" min="5" max="30" value="15"/>
+            </div>
+            <button class="primary" onclick="generateHashtags()">Generate Hashtags</button>
+            <textarea id="hashOut" placeholder="#Generated #Hashtags"></textarea>
+
+            <div class="row">
+              <button class="ghost" onclick="saveCaptionHash()">Save Caption + Hashtags to Library</button>
+              <button class="ghost" onclick="copyText('capOut')">Copy Caption</button>
+              <button class="ghost" onclick="copyText('hashOut')">Copy Hashtags</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Library</h3>
+          <textarea id="savedCaptions" placeholder="Your library of captions + hashtags..."></textarea>
+          <div class="row">
+            <button class="primary" onclick="saveLibrary()">Save Library</button>
+            <button class="ghost" onclick="loadLibrary()">Load</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- PLANNER -->
+      <section id="tab-planner" class="tab hide">
+        <div class="card">
+          <h3>Planner</h3>
+          <div class="grid two">
+            <input id="plTitle" placeholder="Task title"/>
+            <input id="plDue" type="date"/>
+          </div>
+          <textarea id="plNotes" placeholder="Notes"></textarea>
+          <div class="row">
+            <button class="primary" onclick="plAdd()">Add Task</button>
+            <button class="ghost" onclick="plExport()">Export Planner</button>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Tasks</h3>
+          <div id="plList"></div>
+        </div>
+      </section>
+
+      <!-- SETTINGS -->
+      <section id="tab-settings" class="tab hide">
+        <div class="card">
+          <h3>User Guide</h3>
+          <ul>
+            <li>Install as Desktop PWA: open this page → browser menu → <em>Install App</em>.</li>
+            <li>Works fully offline after first load.</li>
+            <li>Your data is saved locally on this device only.</li>
+            <li>Export a backup in System Tracker at any time.</li>
+          </ul>
+        </div>
+        <footer>
+          © 2025 MWA LegacyBuiltCO™ — LegacyBuilt Command OS™ v3.2.9 • Created by April Lungal. All Rights Reserved.<br/>
+          Unauthorized duplication, resale, or modification is strictly prohibited.
+        </footer>
+      </section>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("./service-worker.js");
+      });
+    }
+  </script>
+</body>
+</html>
